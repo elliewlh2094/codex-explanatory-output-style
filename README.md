@@ -11,12 +11,15 @@ The package is distributed as the `explanatory-output-style/` directory in this 
 The reference source for this skill is Anthropic's official Claude plugin:
 `https://github.com/anthropics/claude-plugins-official/tree/main/plugins/explanatory-output-style`
 
+The original Claude plugin uses a SessionStart hook to inject explanatory instructions into every Claude session. Codex skills do not have an equivalent always-on hook, so this conversion broadens the skill description and metadata to improve implicit activation during coding and project-modification work.
+
 ## Behavior
 
-- Treats explanatory guidance as a session-wide response mode for the current coding task.
+- Treats explanatory guidance as a response mode for the current coding, planning, debugging, review, design, or project-modification task.
 - Adds a short `★ Insight` block immediately before meaningful code-writing work.
 - Adds a matching `★ Insight` block immediately after meaningful code-writing work.
 - Adds another pair of `★ Insight` blocks when the task moves into a new substantial coding phase.
+- Adds short `★ Insight` blocks around key reasoning or recommendation points when Codex is only planning, reviewing, debugging, designing, or suggesting how to modify project contents.
 - Keeps the educational content concrete and tied to the active files, modules, data flow, tests, and failure modes.
 - Keeps the insights in the conversation rather than writing them into source files.
 - Allows implicit invocation through `explanatory-output-style/agents/openai.yaml`.
@@ -42,6 +45,12 @@ The points are intended to emphasize:
 
 Typical natural-language requests that should help Codex choose this skill include:
 
+- `implement this change`
+- `plan this project change`
+- `how should I modify this project`
+- `debug this issue`
+- `review this code`
+- `design this feature`
 - `use explanatory mode`
 - `use explanatory output style`
 - `explain as you code`

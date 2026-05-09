@@ -11,12 +11,15 @@
 這個技能的參考來源是 Anthropic 官方的 Claude 插件：
 `https://github.com/anthropics/claude-plugins-official/tree/main/plugins/explanatory-output-style`
 
+Claude 原版插件透過 SessionStart hook 在每個 Claude 工作階段注入解釋型指令。Codex 技能沒有等價的 always-on hook，因此此轉換版本把較廣的觸發面放進技能描述與 metadata，讓它在程式協助與專案修改任務中更容易被隱式選用。
+
 ## 行為
 
-- 將解釋型說明視為目前程式任務的工作階段層級回應模式。
+- 將解釋型說明視為目前寫碼、規劃、除錯、review、設計或專案修改任務的回應模式。
 - 在有意義的寫碼工作開始前加入一個簡短的 `★ Insight` 區塊。
 - 在有意義的寫碼工作完成後加入對應的 `★ Insight` 區塊。
 - 當任務進入新的主要寫碼階段時，再加入新的一組 `★ Insight` 前後區塊。
+- 當 Codex 只是規劃、review、除錯、設計，或建議如何修改專案內容時，會在關鍵推理或建議處加入簡短的 `★ Insight` 區塊。
 - 讓教學內容緊扣目前的檔案、模組、資料流、測試與失敗模式。
 - 將教學內容保留在對話中，不寫進原始碼檔案。
 - 透過 `explanatory-output-style/agents/openai.yaml` 支援隱式觸發。
@@ -42,6 +45,12 @@
 
 下列自然語句有助於讓 Codex 選用這個技能：
 
+- `implement this change`
+- `plan this project change`
+- `how should I modify this project`
+- `debug this issue`
+- `review this code`
+- `design this feature`
 - `use explanatory mode`
 - `use explanatory output style`
 - `explain as you code`

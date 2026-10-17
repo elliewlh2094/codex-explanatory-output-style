@@ -1,7 +1,7 @@
 interface:
   display_name: "Explanatory Output Style"
-  short_description: "Teaching-oriented explanations for coding help, plans, debugging, reviews, and design"
-  default_prompt: "Use $explanatory-output-style to add brief `★ Insight` teaching blocks to coding help, implementation plans, project modification advice, debugging, reviews, and design discussions."
+  short_description: "Brief teaching insights for code, debugging, plans, and reviews"
+  default_prompt: "Use $explanatory-output-style to help me learn from this task with brief, codebase-specific `★ Insight` blocks that explain choices and tradeoffs."
 
 policy:
   allow_implicit_invocation: true

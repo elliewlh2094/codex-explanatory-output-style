@@ -2,71 +2,53 @@
 
 **[English](README.md)** | 中文
 
-## 簡介
+**讓 Codex 在完成任務時，補上簡短的設計說明。**
 
-`explanatory-output-style` 是一個 OpenAI Codex 技能（skill）封裝，用來在 Codex 可行的範圍內重現 Claude 的解釋型輸出風格。當技能啟用時，Codex 會持續完成使用者的程式任務，同時補上簡短且具體的教學說明，內容聚焦在實作選擇、本地模式、權衡與儲存庫相關細節。
+`explanatory-output-style` 是一個 Codex 技能。當你希望從寫碼、除錯、規劃或審查中學習時，技能會加入 `★ Insight` 區塊。每個區塊提供二至三個具體重點，說明程式碼與實作選擇。
 
-這個封裝以此儲存庫中的 `explanatory-output-style/` 目錄提供。安裝時請直接複製這個目錄，並把它當作最終技能目錄使用。
+## 使用範例
 
-這個技能的參考來源是 Anthropic 官方的 Claude 插件：
-`https://github.com/anthropics/claude-plugins-official/tree/main/plugins/explanatory-output-style`
+安裝後，在請求中指定技能。以下以支援缺少標籤的輸入作為假設範例：
 
-Claude 原版插件透過 SessionStart hook 在每個 Claude 工作階段注入解釋型指令。Codex 技能沒有等價的 always-on hook，因此此轉換版本把較廣的觸發面放進技能描述與 metadata，讓它在程式協助與專案修改任務中更容易被隱式選用。
+```text
+請使用 $explanatory-output-style，讓 normalize_label(None) 回傳空字串，並教我這項修改如何保留既有的字串處理行為。
+```
 
-## 行為
-
-- 將解釋型說明視為目前寫碼、規劃、除錯、review、設計或專案修改任務的回應模式。
-- 在有意義的寫碼工作開始前加入一個簡短的 `★ Insight` 區塊。
-- 在有意義的寫碼工作完成後加入對應的 `★ Insight` 區塊。
-- 當任務進入新的主要寫碼階段時，再加入新的一組 `★ Insight` 前後區塊。
-- 當 Codex 只是規劃、review、除錯、設計，或建議如何修改專案內容時，會在關鍵推理或建議處加入簡短的 `★ Insight` 區塊。
-- 讓教學內容緊扣目前的檔案、模組、資料流、測試與失敗模式。
-- 將教學內容保留在對話中，不寫進原始碼檔案。
-- 透過 `explanatory-output-style/agents/openai.yaml` 支援隱式觸發。
-
-## Insight 格式
-
-這個技能使用以下 `★ Insight` 包裝格式：
+回應中額外的教學區塊可能如下：
 
 ```markdown
 `★ Insight ──────────────────────────────────────`
-[2-3 個教學重點]
+- 明確檢查 value is None 可以處理缺少標籤的輸入，避免同時接受 0 或 False。
+- 字串仍經過原有的 strip().lower()，保留去除首尾空白與轉為小寫的行為。
 `─────────────────────────────────────────────────`
 ```
 
-區塊中的重點會著重在：
+Codex 仍會完成原任務，並回報修改與驗證結果。Insight 區塊會補充相關實作選擇的理由。
 
-- 這次任務採用的具體實作方式。
-- 儲存庫既有的本地模式或慣例。
-- 這次修改背後的權衡或設計判斷。
-- 幫助理解這個實作為何適合目前儲存庫的脈絡細節。
+## 適用情境
 
-## 觸發範例
+| 你的請求 | 預期行為 |
+|---|---|
+| 明確指定 `$explanatory-output-style` | 對目前要求的任務使用技能。 |
+| 要求學習，例如「修正錯誤，並教我為什麼這樣改」 | Codex 可以自動選用技能。 |
+| 要求理解計畫，或從審查中學習 | 說明相關取捨或發現，不要求必須修改程式碼。 |
+| 只要求實作、除錯或審查 | 單憑這項請求，不應啟用教學技能。 |
+| 要求只提供指令、簡短回答或停止教學 | 即使明確指定技能，也遵守這項要求。 |
 
-下列自然語句有助於讓 Codex 選用這個技能：
-
-- `implement this change`
-- `plan this project change`
-- `how should I modify this project`
-- `debug this issue`
-- `review this code`
-- `design this feature`
-- `use explanatory mode`
-- `use explanatory output style`
-- `explain as you code`
-- `teach while coding`
-- `walk me through your implementation choices`
+`policy.allow_implicit_invocation: true` 允許自動選用，但不保證每次都能匹配。若 Codex 漏選，請明確指定技能。
 
 ## 安裝方式
 
-請將此儲存庫中的 `explanatory-output-style/` 目錄複製到下列任一位置：
+本儲存庫以完整的 `explanatory-output-style/` 目錄提供技能。除了 Codex，不需要建置、伺服器或額外的執行期依賴。
 
-```text
-${CWD}/.codex/skills/explanatory-output-style/
-${CODEX_HOME}/skills/explanatory-output-style/
-```
+請將目錄複製到[官方列出的任一本機技能位置](https://learn.chatgpt.com/docs/build-skills)：
 
-安裝後的目錄內容應為：
+| 適用範圍 | 目的位置 |
+|---|---|
+| 單一專案 | `<你的專案>/.agents/skills/explanatory-output-style/` |
+| 自己的多個專案 | `~/.agents/skills/explanatory-output-style/` |
+
+複製前先檢查目的位置，保留既有安裝內容，並避免在多個位置重複安裝同一技能。安裝後應包含：
 
 ```text
 explanatory-output-style/
@@ -75,4 +57,27 @@ explanatory-output-style/
     openai.yaml
 ```
 
-完成複製後，重新啟動 Codex，讓技能在新的工作階段中被載入。
+Codex 會自動偵測技能變更。若技能未出現，請重新啟動 Codex。
+
+## 行為與限制
+
+- 根據實際程式碼、儲存庫慣例、測試或觀察到的錯誤解釋選擇。說明保持簡短，並使用使用者的語言。
+- 在有教學價值的工作之前或之後加入 Insight 區塊，不要求前後成對。
+- 將說明保留在對話中，除非使用者明確要求寫入檔案。避免通用教學、例行工具操作敘述與重複摘要。
+- 教學適用於目前要求的任務。本封裝不設定整個工作階段的輸出風格，也不修改全域指令。不應假設教學模式會延續至無關的後續請求。
+
+## 設計與來源
+
+本技能參考 [Claude Code 現行的 Explanatory 輸出風格](https://code.claude.com/docs/en/output-styles)。Claude 的風格適用於整個工作階段；本技能則針對使用者要求的 Codex 任務提供教學，也涵蓋規劃與審查。
+
+歷史起點是 Anthropic 的 [explanatory-output-style 外掛](https://github.com/anthropics/claude-code/tree/main/plugins/explanatory-output-style)。外掛透過 `SessionStart` 鉤子注入指令，其 README 仍稱 Explanatory 已棄用；請以現行 Claude 文件判斷目前行為。
+
+實作依據 OpenAI 的[技能文件](https://learn.chatgpt.com/docs/build-skills)與[技能設計指引](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra)。來源查核日期為 2026-10-17。
+
+## 貢獻與驗證
+
+檔案結構、修改慣例與驗證案例請參閱[貢獻指南](AGENTS.md)。請維持雙語 README 與 `SKILL.md`、`agents/openai.yaml` 的內容一致。
+
+修改文件時，請檢查 Markdown 連結與範例，並執行 `git diff --check` 檢查空白錯誤。修改行為時，請依貢獻指南與 OpenAI 的[技能評估指引](https://developers.openai.com/blog/eval-skills)進行比較驗證。分別記錄技能載入證據、輸出格式與任務結果。
+
+本儲存庫沒有自動化測試套件或覆蓋率門檻。少量試跑只能提供初步證據，不能證明技能在不同模型或版本間的可靠性。

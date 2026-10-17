@@ -2,71 +2,53 @@
 
 English | **[中文](README.zh-TW.md)**
 
-## Introduction
+**Let Codex explain its design choices while completing your task.**
 
-`explanatory-output-style` is an OpenAI Codex skill package that recreates Claude's explanatory output style as closely as Codex skills allow. When the skill is active, Codex keeps working toward the user's coding task while adding brief educational context about implementation choices, local patterns, tradeoffs, and repository-specific details.
+`explanatory-output-style` is a Codex skill that adds short `★ Insight` blocks when you ask to learn from coding, debugging, planning, or review. Each block contains two or three concrete points about the code and the choices behind it.
 
-The package is distributed as the `explanatory-output-style/` directory in this repository. Copy that directory into your Codex skills path and use it as the installed skill.
+## Example
 
-The reference source for this skill is Anthropic's official Claude plugin:
-`https://github.com/anthropics/claude-plugins-official/tree/main/plugins/explanatory-output-style`
+After installation, mention the skill in your request. This hypothetical example adds support for a missing label:
 
-The original Claude plugin uses a SessionStart hook to inject explanatory instructions into every Claude session. Codex skills do not have an equivalent always-on hook, so this conversion broadens the skill description and metadata to improve implicit activation during coding and project-modification work.
+```text
+Use $explanatory-output-style to make normalize_label(None) return an empty string. Teach me how the change preserves existing string behavior.
+```
 
-## Behavior
-
-- Treats explanatory guidance as a response mode for the current coding, planning, debugging, review, design, or project-modification task.
-- Adds a short `★ Insight` block immediately before meaningful code-writing work.
-- Adds a matching `★ Insight` block immediately after meaningful code-writing work.
-- Adds another pair of `★ Insight` blocks when the task moves into a new substantial coding phase.
-- Adds short `★ Insight` blocks around key reasoning or recommendation points when Codex is only planning, reviewing, debugging, designing, or suggesting how to modify project contents.
-- Keeps the educational content concrete and tied to the active files, modules, data flow, tests, and failure modes.
-- Keeps the insights in the conversation rather than writing them into source files.
-- Allows implicit invocation through `explanatory-output-style/agents/openai.yaml`.
-
-## Insight Format
-
-The skill uses the following `★ Insight` wrapper:
+An additional teaching block could look like this:
 
 ```markdown
 `★ Insight ──────────────────────────────────────`
-[2-3 key educational points]
+- An explicit value is None check handles the missing label without also accepting 0 or False.
+- Strings still go through the existing strip().lower() call, preserving whitespace removal and lowercase conversion.
 `─────────────────────────────────────────────────`
 ```
 
-The points are intended to emphasize:
+Codex still completes the requested work and reports the changes and verification results. The Insight block explains the relevant implementation choices.
 
-- The concrete implementation approach chosen for the task.
-- The local pattern or convention used by the repository.
-- The tradeoff or design decision behind the change.
-- The repository-specific detail that helps the user understand why the implementation fits.
+## When to Use
 
-## Trigger Examples
+| Your request | Intended behavior |
+|---|---|
+| Explicitly mention `$explanatory-output-style` | Use the skill for the requested task. |
+| Ask to learn, such as “fix this bug and teach me why” | Codex may select the skill automatically. |
+| Ask to understand a plan or learn from a review | Explain the relevant tradeoffs or findings, without requiring code edits. |
+| Only ask to implement, debug, or review | The request alone should not activate the teaching skill. |
+| Ask for commands only, a short answer, or no teaching | Respect that instruction, even if the skill is explicitly mentioned. |
 
-Typical natural-language requests that should help Codex choose this skill include:
-
-- `implement this change`
-- `plan this project change`
-- `how should I modify this project`
-- `debug this issue`
-- `review this code`
-- `design this feature`
-- `use explanatory mode`
-- `use explanatory output style`
-- `explain as you code`
-- `teach while coding`
-- `walk me through your implementation choices`
+Automatic selection is enabled through `policy.allow_implicit_invocation: true`, but matching is not guaranteed. Mention the skill explicitly if Codex misses it.
 
 ## Installation
 
-Copy the `explanatory-output-style/` directory from this repository into one of the following locations:
+This repository distributes the complete `explanatory-output-style/` folder. No build, server, or additional runtime dependencies are required beyond Codex.
 
-```text
-${CWD}/.codex/skills/explanatory-output-style/
-${CODEX_HOME}/skills/explanatory-output-style/
-```
+Copy the folder into one of the [documented local skill locations](https://learn.chatgpt.com/docs/build-skills):
 
-The installed directory should contain:
+| Scope | Destination |
+|---|---|
+| One project | `<your-project>/.agents/skills/explanatory-output-style/` |
+| Your projects | `~/.agents/skills/explanatory-output-style/` |
+
+Inspect the destination first. Preserve any existing installation and avoid installing the same skill in multiple locations. The installed folder should contain:
 
 ```text
 explanatory-output-style/
@@ -75,4 +57,27 @@ explanatory-output-style/
     openai.yaml
 ```
 
-Restart Codex after copying the directory so the skill is discovered in a new session.
+Codex detects skill changes automatically. If the skill does not appear, restart Codex.
+
+## Behavior and Limits
+
+- Explain choices grounded in the actual code, repository conventions, tests, or observed failures. Keep the explanations brief and use the user's language.
+- Place Insight blocks before or after relevant work when there is something useful to teach. Matching pairs are not required.
+- Keep insights in the conversation unless the user explicitly requests them in a file. Avoid generic tutorials, routine tool narration, and repeated summaries.
+- Apply teaching to the requested task. This package does not set a session-wide style or modify global instructions. Do not assume teaching carries over to unrelated later requests.
+
+## Design and Sources
+
+The skill is inspired by [Claude Code's current Explanatory output style](https://code.claude.com/docs/en/output-styles). Claude's style applies across a session; this skill provides teaching for the requested Codex task, including planning and review.
+
+The historical starting point is Anthropic's [explanatory-output-style plugin](https://github.com/anthropics/claude-code/tree/main/plugins/explanatory-output-style), which injects instructions through a `SessionStart` hook. Its README still calls Explanatory deprecated; use the current Claude documentation for current behavior.
+
+The implementation follows OpenAI's [skill documentation](https://learn.chatgpt.com/docs/build-skills) and [skill design guidance](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra). Sources reviewed on 2026-10-17.
+
+## Contributing and Verification
+
+See [Repository Guidelines](AGENTS.md) for the file structure, editing conventions, and verification cases. Keep both READMEs consistent with `SKILL.md` and `agents/openai.yaml`.
+
+For documentation changes, check Markdown links, examples, and whitespace with `git diff --check`. For behavior changes, follow the comparison procedure in the contributor guide and OpenAI's [skill evaluation guide](https://developers.openai.com/blog/eval-skills). Record skill-loading evidence separately from the output format and task result.
+
+This repository has no automated test suite or coverage threshold. A few trial runs provide preliminary evidence, not reliability across models or versions.
